@@ -20,6 +20,7 @@ func main() {
 	mux.HandleFunc("GET /admin/metrics", apiCfg.fileserverHitsHandler)
 	mux.HandleFunc("GET /api/healthz", healthCheckHandler)
 	mux.HandleFunc("POST /admin/reset", apiCfg.resetMetricsHandler)
+	mux.HandleFunc("POST /api/validate_chirp", validateChirp)
 
 	fmt.Printf("server listening for requests on port %v\n", server.Addr)
 	log.Fatal(server.ListenAndServe())
