@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"html/template"
 	"net/http"
 )
 
@@ -14,9 +14,24 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 }
 
 func (cfg *apiConfig) fileserverHitsHandler(res http.ResponseWriter, _ *http.Request) {
-	res.Header().Add("Content-Type", "text/plain; charset=utf-8")
-	res.WriteHeader(http.StatusOK)
-	res.Write([]byte(fmt.Sprintf("Hits: %v", cfg.fileserverHits.Load())))
+	tmpl, err := template.New("metrics").Parse(`
+        <html>
+            <body>
+                <h1>Welcome, Chirpy Admin</h1>
+                <p>Chirpy has been visited {{.}} times!</p>
+            </body>
+        </html>
+        `)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = tmpl.Execute(res, cfg.fileserverHits.Load())
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func (cfg *apiConfig) resetMetricsHandler(res http.ResponseWriter, _ *http.Request) {
