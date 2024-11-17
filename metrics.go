@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"html/template"
 	"net/http"
 )
@@ -13,7 +14,7 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 	)
 }
 
-func (cfg *apiConfig) fileserverHitsHandler(res http.ResponseWriter, _ *http.Request) {
+func (cfg *apiConfig) fileserverHitsHandler(w http.ResponseWriter, _ *http.Request) {
 	tmpl, err := template.New("metrics").Parse(`
         <html>
             <body>
@@ -23,19 +24,34 @@ func (cfg *apiConfig) fileserverHitsHandler(res http.ResponseWriter, _ *http.Req
         </html>
         `)
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = tmpl.Execute(res, cfg.fileserverHits.Load())
+	err = tmpl.Execute(w, cfg.fileserverHits.Load())
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-func (cfg *apiConfig) resetMetricsHandler(res http.ResponseWriter, _ *http.Request) {
-	cfg.fileserverHits.Store(0)
+func (cfg *apiConfig) resetMetricsHandler(w http.ResponseWriter, r *http.Request) {
+	if cfg.platform != "dev" {
+		respondWithError(w, http.StatusForbidden, "Forbidden", errors.New("Forbidden platform"))
+		return
+	}
 
-	res.WriteHeader(http.StatusOK)
+	cfg.fileserverHits.Store(0)
+	err := cfg.db.DeleteUsers(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not delete users", err)
+		return
+	}
+	err = cfg.db.DeleteChirps(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not delete chirps", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
