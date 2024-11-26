@@ -53,16 +53,23 @@ func main() {
 	}
 
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
+
 	mux.HandleFunc("GET /admin/metrics", apiCfg.fileserverHitsHandler)
-	mux.HandleFunc("GET /api/healthz", healthCheckHandler)
 	mux.HandleFunc("POST /admin/reset", apiCfg.resetMetricsHandler)
+
+	mux.HandleFunc("GET /api/healthz", healthCheckHandler)
+
 	mux.HandleFunc("POST /api/users", apiCfg.createUserHandler)
-	mux.HandleFunc("POST /api/chirps", apiCfg.createChirpHandler)
-	mux.HandleFunc("GET /api/chirps", apiCfg.getChirpsHandler)
-	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.getChirpByIDHandler)
+	mux.HandleFunc("PUT /api/users", apiCfg.UpdateUserHandler)
+
 	mux.HandleFunc("POST /api/login", apiCfg.loginHandler)
 	mux.HandleFunc("POST /api/refresh", apiCfg.refreshHandler)
 	mux.HandleFunc("POST /api/revoke", apiCfg.revokeHandler)
+
+	mux.HandleFunc("POST /api/chirps", apiCfg.createChirpHandler)
+	mux.HandleFunc("GET /api/chirps", apiCfg.getChirpsHandler)
+	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.getChirpByIDHandler)
+	mux.HandleFunc("DELETE /api/chirps/{chirpID}", apiCfg.deleteChirpHandler)
 
 	fmt.Printf("server listening for requests on port %v\n", server.Addr)
 	log.Fatal(server.ListenAndServe())
